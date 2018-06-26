@@ -993,6 +993,10 @@ with pkgs;
   capstone = callPackage ../development/libraries/capstone { };
   unicorn-emu = callPackage ../development/libraries/unicorn-emu { };
 
+  casync = callPackage ../applications/networking/sync/casync {
+    sphinx = python3Packages.sphinx;
+  };
+
   cataract          = callPackage ../applications/misc/cataract { };
   cataract-unstable = callPackage ../applications/misc/cataract/unstable.nix { };
 
@@ -4635,6 +4639,8 @@ with pkgs;
 
   remarshal = callPackage ../development/tools/remarshal { };
 
+  rocket = libsForQt5.callPackage ../tools/graphics/rocket { };
+
   rtaudio = callPackage ../development/libraries/audio/rtaudio { };
 
   rtmidi = callPackage ../development/libraries/audio/rtmidi { };
@@ -7341,7 +7347,8 @@ with pkgs;
 
   ocropus = callPackage ../applications/misc/ocropus { };
 
-  inherit (callPackages ../development/interpreters/perl {}) perl perl522 perl524 perl526;
+  perl = perl524;
+  inherit (callPackages ../development/interpreters/perl {}) perl522 perl524 perl526 perl528;
 
   pachyderm = callPackage ../applications/networking/cluster/pachyderm { };
 
@@ -7595,6 +7602,8 @@ with pkgs;
   amdappsdkFull = amdappsdk.override {
     samples = true;
   };
+
+  amtk = callPackage ../development/libraries/amtk { };
 
   avrgcclibc = throw "avrgcclibs are now separate packages, install avrbinutils, avrgcc and avrlibc";
 
@@ -8076,6 +8085,8 @@ with pkgs;
   gnome-desktop-testing = callPackage ../development/tools/gnome-desktop-testing {};
 
   gnome-usage = callPackage ../applications/misc/gnome-usage {};
+
+  gnome-latex = callPackage ../applications/editors/gnome-latex/default.nix { };
 
   gnum4 = callPackage ../development/tools/misc/gnum4 { };
   m4 = gnum4;
@@ -8872,6 +8883,8 @@ with pkgs;
   curlcpp = callPackage ../development/libraries/curlcpp { };
 
   cutee = callPackage ../development/libraries/cutee { };
+
+  cutelyst = libsForQt5.callPackage ../development/libraries/cutelyst { };
 
   cxxtools = callPackage ../development/libraries/cxxtools { };
 
@@ -11671,6 +11684,8 @@ with pkgs;
 
   skalibs = callPackage ../development/libraries/skalibs { };
 
+  skydive = callPackage ../tools/networking/skydive { };
+
   slang = callPackage ../development/libraries/slang { };
 
   slibGuile = callPackage ../development/libraries/slib {
@@ -11859,6 +11874,8 @@ with pkgs;
   tecla = callPackage ../development/libraries/tecla { };
 
   tectonic = callPackage ../tools/typesetting/tectonic { };
+
+  tepl = callPackage ../development/libraries/tepl { };
 
   telepathy-glib = callPackage ../development/libraries/telepathy/glib { };
 
@@ -13153,6 +13170,8 @@ with pkgs;
     unifiStable
     unifiTesting;
   unifi = unifiStable;
+
+  virtlyst = libsForQt5.callPackage ../servers/web-apps/virtlyst { };
 
   virtuoso6 = callPackage ../servers/sql/virtuoso/6.x.nix { };
 

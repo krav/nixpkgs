@@ -61,6 +61,10 @@ self: super: {
   statistics = dontCheck super.statistics;
   vector-builder = dontCheck super.vector-builder;
 
+  # These packages (and their reverse deps) cannot be built with profiling enabled.
+  ghc-heap-view = disableLibraryProfiling super.ghc-heap-view;
+  ghc-datasize = disableLibraryProfiling super.ghc-datasize;
+
   # This test keeps being aborted because it runs too quietly for too long
   Lazy-Pbkdf2 = if pkgs.stdenv.isi686 then dontCheck super.Lazy-Pbkdf2 else super.Lazy-Pbkdf2;
 
@@ -1035,7 +1039,7 @@ self: super: {
   vulkan = super.vulkan.override { vulkan = pkgs.vulkan-loader; };
 
   # Builds only with the latest version of indexed-list-literals.
-  vector-sized_1_0_2_0 = super.vector-sized_1_0_2_0.override {
+  vector-sized_1_0_3_0 = super.vector-sized_1_0_3_0.override {
     indexed-list-literals = self.indexed-list-literals_0_2_1_1;
   };
 
