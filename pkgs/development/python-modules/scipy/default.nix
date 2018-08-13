@@ -1,4 +1,4 @@
-{lib, fetchPypi, python, buildPythonPackage, isPyPy, gfortran, nose, pytest, numpy}:
+{lib, fetchPypi, python, buildPythonPackage, gfortran, nose, pytest, numpy}:
 
 buildPythonPackage rec {
   pname = "scipy";
@@ -50,7 +50,7 @@ buildPythonPackage rec {
 
   meta = {
     description = "SciPy (pronounced 'Sigh Pie') is open-source software for mathematics, science, and engineering. ";
-    homepage = http://www.scipy.org/;
+    homepage = https://www.scipy.org/;
     maintainers = with lib.maintainers; [ fridh ];
   };
 }

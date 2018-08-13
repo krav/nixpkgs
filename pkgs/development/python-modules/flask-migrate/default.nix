@@ -1,12 +1,10 @@
-{ stdenv, buildPythonPackage, fetchPypi, isPy3k, python, glibcLocales, flask, flask_sqlalchemy, flask_script, alembic
-}:
+{ stdenv, buildPythonPackage, fetchPypi, isPy3k, glibcLocales, flask, flask_sqlalchemy, flask_script, alembic }:
 
 with stdenv.lib;
 
 buildPythonPackage rec {
   pname = "Flask-Migrate";
   version = "2.2.1";
-  name = "${pname}-${version}";
 
   src = fetchPypi {
     inherit pname version;

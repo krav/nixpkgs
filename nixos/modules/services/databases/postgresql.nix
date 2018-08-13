@@ -146,7 +146,7 @@ in
       };
       superUser = mkOption {
         type = types.str;
-        default= if versionAtLeast config.system.nixos.stateVersion "17.09" then "postgres" else "root";
+        default= if versionAtLeast config.system.stateVersion "17.09" then "postgres" else "root";
         internal = true;
         description = ''
           NixOS traditionally used 'root' as superuser, most other distros use 'postgres'.
@@ -165,14 +165,14 @@ in
 
     services.postgresql.package =
       # Note: when changing the default, make it conditional on
-      # ‘system.nixos.stateVersion’ to maintain compatibility with existing
+      # ‘system.stateVersion’ to maintain compatibility with existing
       # systems!
-      mkDefault (if versionAtLeast config.system.nixos.stateVersion "17.09" then pkgs.postgresql96
-            else if versionAtLeast config.system.nixos.stateVersion "16.03" then pkgs.postgresql95
+      mkDefault (if versionAtLeast config.system.stateVersion "17.09" then pkgs.postgresql96
+            else if versionAtLeast config.system.stateVersion "16.03" then pkgs.postgresql95
             else pkgs.postgresql94);
 
     services.postgresql.dataDir =
-      mkDefault (if versionAtLeast config.system.nixos.stateVersion "17.09" then "/var/lib/postgresql/${config.services.postgresql.package.psqlSchema}"
+      mkDefault (if versionAtLeast config.system.stateVersion "17.09" then "/var/lib/postgresql/${config.services.postgresql.package.psqlSchema}"
                  else "/var/db/postgresql");
 
     services.postgresql.authentication = mkAfter
@@ -183,14 +183,14 @@ in
         host  all all ::1/128      md5
       '';
 
-    users.extraUsers.postgres =
+    users.users.postgres =
       { name = "postgres";
         uid = config.ids.uids.postgres;
         group = "postgres";
         description = "PostgreSQL server user";
       };
 
-    users.extraGroups.postgres.gid = config.ids.gids.postgres;
+    users.groups.postgres.gid = config.ids.gids.postgres;
 
     environment.systemPackages = [ postgresql ];
 

@@ -1,11 +1,10 @@
-{ stdenv, buildPythonPackage, fetchPypi, python
+{ stdenv, buildPythonPackage, fetchPypi
 , pytest, pytestcov, watchdog, mock
 }:
 
 buildPythonPackage rec {
   pname = "hupper";
   version = "1.3";
-  name = "${pname}-${version}";
 
   src = fetchPypi {
     inherit pname version;

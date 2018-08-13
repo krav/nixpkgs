@@ -334,7 +334,7 @@ in
       in
         generators.toINI {} totalConfig;
 
-    users.extraUsers = singleton {
+    users.users = singleton {
       name = "ceph";
       uid = config.ids.uids.ceph;
       description = "Ceph daemon user";

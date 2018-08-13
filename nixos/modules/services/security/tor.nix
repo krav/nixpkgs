@@ -578,7 +578,7 @@ in
             ];
           }
         '';
-        type = types.loaOf (types.submodule ({name, config, ...}: {
+        type = types.loaOf (types.submodule ({name, ...}: {
           options = {
 
              name = mkOption {
@@ -638,7 +638,7 @@ in
              authorizeClient = mkOption {
                default = null;
                description = "If configured, the hidden service is accessible for authorized clients only.";
-               type = types.nullOr (types.submodule ({config, ...}: {
+               type = types.nullOr (types.submodule ({...}: {
 
                  options = {
 
@@ -686,8 +686,8 @@ in
         always create a container/VM with a separate Tor daemon instance.
       '';
 
-    users.extraGroups.tor.gid = config.ids.gids.tor;
-    users.extraUsers.tor =
+    users.groups.tor.gid = config.ids.gids.tor;
+    users.users.tor =
       { description = "Tor Daemon User";
         createHome  = true;
         home        = torDirectory;

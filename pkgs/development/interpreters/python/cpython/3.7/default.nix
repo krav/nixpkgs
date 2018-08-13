@@ -1,5 +1,4 @@
 { stdenv, fetchurl, fetchpatch
-, glibc
 , bzip2
 , expat
 , libffi
@@ -16,7 +15,7 @@
 , CF, configd
 , python-setup-hook
 # For the Python package set
-, pkgs, packageOverrides ? (self: super: {})
+, packageOverrides ? (self: super: {})
 }:
 
 assert x11Support -> tcl != null
@@ -28,8 +27,7 @@ with stdenv.lib;
 let
   majorVersion = "3.7";
   minorVersion = "0";
-  minorVersionSuffix = "rc1";
-  pythonVersion = majorVersion;
+  minorVersionSuffix = "";
   version = "${majorVersion}.${minorVersion}${minorVersionSuffix}";
   libPrefix = "python${majorVersion}";
   sitePackages = "lib/${libPrefix}/site-packages";
@@ -38,6 +36,8 @@ let
     zlib bzip2 expat lzma libffi gdbm sqlite readline ncurses openssl ]
     ++ optionals x11Support [ tcl tk libX11 xproto ]
     ++ optionals stdenv.isDarwin [ CF configd ];
+
+  hasDistutilsCxxPatch = !(stdenv.cc.isGNU or false);
 
 in stdenv.mkDerivation {
   name = "python3-${version}";
@@ -48,7 +48,7 @@ in stdenv.mkDerivation {
 
   src = fetchurl {
     url = "https://www.python.org/ftp/python/${majorVersion}.${minorVersion}/Python-${version}.tar.xz";
-    sha256 = "1dqb1in7xlvq7959pvvxpm50nz5jk7ifxza2x4hfvqr31jvbkky9";
+    sha256 = "0j9mic5c9lbd2b20wka7hily7szz740wy9ilfrczxap63rnrk0h3";
   };
 
   NIX_LDFLAGS = optionalString stdenv.isLinux "-lgcc_s";
@@ -63,6 +63,20 @@ in stdenv.mkDerivation {
 
   patches = [
     ./no-ldconfig.patch
+    # Fix darwin build https://bugs.python.org/issue34027
+    (fetchpatch {
+      url = https://bugs.python.org/file47666/darwin-libutil.patch;
+      sha256 = "0242gihnw3wfskl4fydp2xanpl8k5q7fj4dp7dbbqf46a4iwdzpa";
+    })
+  ] ++ optionals hasDistutilsCxxPatch [
+    # Fix for http://bugs.python.org/issue1222585
+    # Upstream distutils is calling C compiler to compile C++ code, which
+    # only works for GCC and Apple Clang. This makes distutils to call C++
+    # compiler when needed.
+    (fetchpatch {
+      url = "https://bugs.python.org/file47669/python-3.8-distutils-C++.patch";
+      sha256 = "0s801d7ww9yrk6ys053jvdhl0wicbznx08idy36f1nrrxsghb3ii";
+    })
   ];
 
   postPatch = ''
@@ -80,6 +94,7 @@ in stdenv.mkDerivation {
     "--without-ensurepip"
     "--with-system-expat"
     "--with-system-ffi"
+    "--with-openssl=${openssl.dev}"
   ];
 
   preConfigure = ''
@@ -146,7 +161,7 @@ in stdenv.mkDerivation {
   passthru = let
     pythonPackages = callPackage ../../../../../top-level/python-packages.nix {python=self; overrides=packageOverrides;};
   in rec {
-    inherit libPrefix sitePackages x11Support;
+    inherit libPrefix sitePackages x11Support hasDistutilsCxxPatch;
     executable = "${libPrefix}m";
     buildEnv = callPackage ../../wrapper.nix { python = self; inherit (pythonPackages) requiredPythonModules; };
     withPackages = import ../../with-packages.nix { inherit buildEnv pythonPackages;};

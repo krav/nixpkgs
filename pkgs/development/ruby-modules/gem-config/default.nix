@@ -206,6 +206,13 @@ in
     buildFlags = [ "--with-system-v8=true" ];
   };
 
+  libxml-ruby = attrs: {
+    buildFlags = [
+      "--with-xml2-lib=${libxml2.out}/lib"
+      "--with-xml2-include=${libxml2.dev}/include/libxml2"
+    ];
+  };
+
   msgpack = attrs: {
     buildInputs = [ libmsgpack ];
   };
@@ -354,6 +361,10 @@ in
     buildInputs = [ kerberos ];
   };
 
+  tiny_tds = attrs: {
+    nativeBuildInputs = [ pkgconfig openssl ];
+  };
+
   therubyracer = attrs: {
     buildFlags = [
       "--with-v8-dir=${v8}"
@@ -390,5 +401,9 @@ in
       export XAPIAN_CONFIG=${xapian_1_2_22}/bin/xapian-config
     '';
   };
+
+   zookeeper = attrs: {
+     buildInputs = stdenv.lib.optionals stdenv.isDarwin [ darwin.cctools ];
+   };
 
 }

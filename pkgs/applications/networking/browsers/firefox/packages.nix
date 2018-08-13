@@ -1,4 +1,4 @@
-{ lib, callPackage, stdenv, overrideCC, gcc5, fetchurl, fetchFromGitHub, fetchpatch }:
+{ lib, callPackage, stdenv, fetchurl, fetchFromGitHub, fetchpatch, python3 }:
 
 let
 
@@ -6,10 +6,6 @@ let
 
   nixpkgsPatches = [
     ./env_var_for_system_dir.patch
-
-    # this one is actually an omnipresent bug
-    # https://bugzilla.mozilla.org/show_bug.cgi?id=1444519
-    ./fix-pa-context-connect-retval.patch
   ];
 
   firefox60_aarch64_skia_patch = fetchpatch {
@@ -24,21 +20,24 @@ rec {
 
   firefox = common rec {
     pname = "firefox";
-    version = "60.0.2";
+    version = "61.0.2";
     src = fetchurl {
       url = "mirror://mozilla/firefox/releases/${version}/source/firefox-${version}.source.tar.xz";
-      sha512 = "2my4v8al3swwbiqcp3a5y89imly6apc2p9q0cbkhbiz0sqylc0l02jh0qp95migmik56m4prwqdi81kgqs7cw5r2np3mm6sc1b45mkg";
+      sha512 = "3zzcxqjpsn2m5z4l66rxrq7yf58aii370jj8pcl50smcd55sfsyknnc20agbppsw4k4pnwycfn57im33swwkjzg0hk0h2ng4rvi42x2";
     };
 
     patches = nixpkgsPatches ++ [
       ./no-buildconfig.patch
-    ] ++ lib.optional stdenv.isAarch64 firefox60_aarch64_skia_patch;
+    ];
+
+    extraNativeBuildInputs = [ python3 ];
 
     meta = {
       description = "A web browser built from Firefox source tree";
       homepage = http://www.mozilla.com/en-US/firefox/;
       maintainers = with lib.maintainers; [ eelco ];
       platforms = lib.platforms.linux;
+      license = lib.licenses.mpl20;
     };
     updateScript = callPackage ./update.nix {
       attrPath = "firefox-unwrapped";
@@ -47,13 +46,17 @@ rec {
 
   firefox-esr-52 = common rec {
     pname = "firefox-esr";
-    version = "52.8.1esr";
+    version = "52.9.0esr";
     src = fetchurl {
       url = "mirror://mozilla/firefox/releases/${version}/source/firefox-${version}.source.tar.xz";
-      sha512 = "a4883550fdf62e66b10f1de7416d3614a2cb0ce3a004d9a79ecc37a726794d7bbdb0a6767faab4ea97278d2192462597551fc13b7e9a9c38d043c2879d51095a";
+      sha512 = "bfca42668ca78a12a9fb56368f4aae5334b1f7a71966fbba4c32b9c5e6597aac79a6e340ac3966779d2d5563eb47c054ab33cc40bfb7306172138ccbd3adb2b9";
     };
 
-    patches = nixpkgsPatches;
+    patches = nixpkgsPatches ++ [
+      # this one is actually an omnipresent bug
+      # https://bugzilla.mozilla.org/show_bug.cgi?id=1444519
+      ./fix-pa-context-connect-retval.patch
+    ];
 
     meta = firefox.meta // {
       description = "A web browser built from Firefox Extended Support Release source tree";
@@ -66,14 +69,18 @@ rec {
 
   firefox-esr-60 = common rec {
     pname = "firefox-esr";
-    version = "60.0.2esr";
+    version = "60.1.0esr";
     src = fetchurl {
       url = "mirror://mozilla/firefox/releases/${version}/source/firefox-${version}.source.tar.xz";
-      sha512 = "0vbilh4iwqfzkj598zbgkmwbkxh4bia8gn7p9x6xd7yvhb6708p4dfkkbg61hdh3bddyaxx1zd0wi8qxfxbrx19mc6k9dpc6xz52iy1";
+      sha512 = "2bg7zvkpy1x2ryiazvk4nn5m94v0addbhrcrlcf9djnqjf14rp5q50lbiymhxxz0988vgpicsvizifb8gb3hi7b8g17rdw6438ddhh6";
     };
 
     patches = nixpkgsPatches ++ [
       ./no-buildconfig.patch
+
+      # this one is actually an omnipresent bug
+      # https://bugzilla.mozilla.org/show_bug.cgi?id=1444519
+      ./fix-pa-context-connect-retval.patch
     ] ++ lib.optional stdenv.isAarch64 firefox60_aarch64_skia_patch;
 
     meta = firefox.meta // {
@@ -132,6 +139,7 @@ rec {
       '';
       homepage = https://www.torproject.org/projects/torbrowser.html;
       platforms = lib.platforms.linux;
+      license = lib.licenses.bsd3;
     };
   };
 
@@ -139,16 +147,16 @@ in rec {
 
   tor-browser-7-5 = common (rec {
     pname = "tor-browser";
-    version = "7.5.5";
+    version = "7.5.6";
     isTorBrowserLike = true;
 
     # FIXME: fetchFromGitHub is not ideal, unpacked source is >900Mb
     src = fetchFromGitHub {
       owner = "SLNOS";
       repo  = "tor-browser";
-      # branch "tor-browser-52.8.1esr-7.5-1-slnos"
-      rev   = "08e246847f0ccbee42f61d9449344d461c886cf1";
-      sha256 = "023k7427g2hqkpdsw1h384djlyy6jyidpssrrwzbs3qv4s13slah";
+      # branch "tor-browser-52.9.0esr-7.5-2-slnos"
+      rev   = "95bb92d552876a1f4260edf68fda5faa3eb36ad8";
+      sha256 = "1ykn3yg4s36g2cpzxbz7s995c33ij8kgyvghx38z4i8siaqxdddy";
     };
 
     patches = nixpkgsPatches;

@@ -1,13 +1,12 @@
-{ fetchurl, stdenv, buildPythonPackage }:
+{ fetchPypi, stdenv, buildPythonPackage }:
 
 buildPythonPackage rec {
   pname = "zc.buildout";
-  version = "2.11.5";
-  name = "${pname}-nix-${version}";
+  version = "2.12.1";
 
-  src = fetchurl {
-    url = "mirror://pypi/${builtins.substring 0 1 pname}/${pname}/${pname}-${version}.tar.gz";
-    sha256 = "537a22715d82362cddd811da08d11a31d30d5161ce7994b208bd85ebb348d122";
+  src = fetchPypi {
+    inherit pname version;
+    sha256 = "1e180b62fd129a68cb3a9ec8eb0ef457e18921269a93e87ef2cc34519415332d";
   };
 
   patches = [ ./nix.patch ];

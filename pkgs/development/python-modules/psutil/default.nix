@@ -2,13 +2,11 @@
 , buildPythonPackage
 , fetchPypi
 , darwin
-, mock
 }:
 
 buildPythonPackage rec {
   pname = "psutil";
   version = "5.4.6";
-  name = "${pname}-${version}";
 
   src = fetchPypi {
     inherit pname version;

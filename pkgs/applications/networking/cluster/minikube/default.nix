@@ -1,5 +1,5 @@
-{ stdenv, buildGoPackage, fetchFromGitHub, fetchurl, go-bindata, libvirt, qemu
-, gpgme, makeWrapper, hostPlatform, vmnet, python, pkgconfig
+{ stdenv, buildGoPackage, fetchFromGitHub, go-bindata, libvirt, qemu
+, gpgme, makeWrapper, hostPlatform, vmnet, python
 , docker-machine-kvm, docker-machine-kvm2
 , extraDrivers ? []
 }:
@@ -14,7 +14,7 @@ let
 in buildGoPackage rec {
   pname   = "minikube";
   name    = "${pname}-${version}";
-  version = "0.27.0";
+  version = "0.28.1";
 
   goPackagePath = "k8s.io/minikube";
 
@@ -22,7 +22,7 @@ in buildGoPackage rec {
     owner  = "kubernetes";
     repo   = "minikube";
     rev    = "v${version}";
-    sha256 = "00gj8x5p0vxwy0y0g5nnddmq049h7zxvhb73lb4gii5mghr9mkws";
+    sha256 = "0c36rzsdzxf9q6l4hl506bsd4qwmw033i0k1xhqszv9agg7qjlmm";
   };
 
   buildInputs = [ go-bindata makeWrapper gpgme ] ++ stdenv.lib.optional hostPlatform.isDarwin vmnet;

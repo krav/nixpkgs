@@ -5,14 +5,11 @@
 , coverage
 , glibcLocales
 , flake8
-, matplotlib
-, pandas
 }:
 
 buildPythonPackage rec {
   pname = "tqdm";
   version = "4.23.4";
-  name = "${pname}-${version}";
 
   src = fetchPypi {
     inherit pname version;

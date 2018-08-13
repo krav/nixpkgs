@@ -19,15 +19,13 @@
 , pytest
 , pytestcov
 , requests-mock
-, testtools
 , tornado
+, attrs
 }:
 
-let
+buildPythonPackage rec {
   pname = "zeep";
   version = "3.0.0";
-in buildPythonPackage {
-  name = "${pname}-${version}";
 
   src = fetchPypi {
     inherit pname version;
@@ -35,6 +33,7 @@ in buildPythonPackage {
   };
 
   propagatedBuildInputs = [
+    attrs
     appdirs
     cached-property
     defusedxml

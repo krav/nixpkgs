@@ -2,22 +2,23 @@
 , cheroot, portend, routes, six
 , setuptools_scm
 , backports_unittest-mock, objgraph, pathpy, pytest, pytestcov
+, backports_functools_lru_cache, requests_toolbelt
 }:
 
 buildPythonPackage rec {
   pname = "CherryPy";
-  version = "16.0.2";
+  version = "17.0.0";
 
   src = fetchPypi {
     inherit pname version;
-    sha256 = "858fbff27235a392026b1d821ad815b587815c94fbb14312e2e64cc23766b9c3";
+    sha256 = "3cdb5fbae183db49ab1f1a90643d521aa060c93f90001cc99c19d8d15b7a3fb7";
   };
 
   propagatedBuildInputs = [ cheroot portend routes six ];
 
   buildInputs = [ setuptools_scm ];
 
-  checkInputs = [ backports_unittest-mock objgraph pathpy pytest pytestcov ];
+  checkInputs = [ backports_unittest-mock objgraph pathpy pytest pytestcov backports_functools_lru_cache requests_toolbelt ];
 
   checkPhase = ''
     LANG=en_US.UTF-8 pytest

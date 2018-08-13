@@ -6,7 +6,7 @@ import ./make-test.nix ({ pkgs, ...} :
     maintainers = [ ttuegel ];
   };
 
-  machine = { lib, ... }:
+  machine = { ... }:
   let
     sddm_theme = pkgs.stdenv.mkDerivation {
       name = "breeze-ocr-theme";
@@ -41,7 +41,7 @@ import ./make-test.nix ({ pkgs, ...} :
   enableOCR = true;
 
   testScript = { nodes, ... }: let
-    user = nodes.machine.config.users.extraUsers.alice;
+    user = nodes.machine.config.users.users.alice;
     xdo = "${pkgs.xdotool}/bin/xdotool";
   in ''
     startAll;
