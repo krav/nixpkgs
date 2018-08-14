@@ -5,6 +5,7 @@
 
 # Optional Arguments
 , snappy ? null, google-gflags ? null, zlib ? null, bzip2 ? null, lz4 ? null
+, numactl ? null
 
 # Malloc implementation
 , jemalloc ? null, gperftools ? null
@@ -18,23 +19,24 @@ let
 in
 stdenv.mkDerivation rec {
   name = "rocksdb-${version}";
-  version = "5.11.3";
 
-  outputs = [ "dev" "out" "static" "bin" ];
+  version = "5.14.2";
 
   src = fetchFromGitHub {
     owner = "facebook";
     repo = "rocksdb";
     rev = "v${version}";
-    sha256 = "15x2r7aib1xinwcchl32wghs8g96k4q5xgv6z97mxgp35475x01p";
+    sha256 = "10v2ilsnjzxpagvg9kgnk7q5a6a8z1bp2qck27m27002lnn3ib4a";
   };
+
+  outputs = [ "dev" "out" "static" "bin" ];
 
   nativeBuildInputs = [ which perl ];
   buildInputs = [ snappy google-gflags zlib bzip2 lz4 malloc fixDarwinDylibNames ];
 
   postPatch = ''
-    # Hack to fix typos
-    sed -i 's,#inlcude,#include,g' build_tools/build_detect_platform
+    patchShebangs build_tools/build_detect_platform
+    patchShebangs build_tools/version.sh
   '';
 
   # Environment vars used for building certain configurations
