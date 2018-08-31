@@ -34,14 +34,14 @@ let
       Restart = "on-failure";
       StartLimitBurst = "5";
       StartLimitInterval = "30min";
-      ExecStart = "${ceph.out}/bin/${if daemonType == "rgw" then "radosgw" else "ceph-${daemonType}"} -f --cluster ${clusterName} --id ${if daemonType == "rgw" then "client.${daemonId}" else daemonId} --setuser ceph --setgroup ceph";
+      ExecStart = "${ceph.out}/bin/${if daemonType == "rgw" then "radosgw" else "ceph-${daemonType}"} -f --cluster ${clusterName} --id ${daemonId} --setuser ceph --setgroup disk"; # ${if daemonType == "rgw" then "client.${daemonId}" else daemonId}";
     } // extraServiceConfig
       // optionalAttrs (daemonType == "osd") { ExecStartPre = "${ceph.out}/libexec/ceph/ceph-osd-prestart.sh --id ${daemonId} --cluster ${clusterName}"; };
     } // optionalAttrs (builtins.elem daemonType [ "mds" "mon" "rgw" "mgr" ]) { preStart = ''
         daemonPath="/var/lib/ceph/${if daemonType == "rgw" then "radosgw" else daemonType}/${clusterName}-${daemonId}"
         if [ ! -d ''$daemonPath ]; then
           mkdir -m 755 -p ''$daemonPath
-          chown -R ceph:ceph ''$daemonPath 
+          chown -R ceph:ceph ''$daemonPath
         fi
       '';
     } // optionalAttrs (daemonType == "osd") { path = [ pkgs.getopt ]; }
@@ -52,10 +52,11 @@ let
         description = "Ceph target allowing to start/stop all ceph-${daemonType} services at once";
         partOf = [ "ceph.target" ];
         before = [ "ceph.target" ];
+        wantedBy = [ "ceph.target" ];
       };
     }
   );
-in 
+in
 {
   options.services.ceph = {
     # Ceph has a monolithic configuration file but different sections for
@@ -174,7 +175,9 @@ in
       };
       extraConfig = mkOption {
         type = with types; attrsOf str;
-        default = {};
+        default = {
+          "rgw mime types file" = "${pkgs.mime-types}/etc/mime.types"; # FIXME belongs in package
+        };
         description = ''
           Extra configuration to add to the global section for manager daemons.
         '';
@@ -247,7 +250,8 @@ in
       };
       extraConfig = mkOption {
         type = with types; attrsOf str;
-        default = {};
+        default = {
+        };
         description = ''
           Extra configuration to add to the MDS section.
         '';
@@ -313,9 +317,9 @@ in
       }
     ];
 
-    warnings = optional (cfg.global.monInitialMembers == null) 
+    warnings = optional (cfg.global.monInitialMembers == null)
       ''Not setting up a list of members in monInitialMembers requires that you set the host variable for each mon daemon or else the cluster won't function'';
-    
+
     environment.etc."ceph/ceph.conf".text = let
       # Translate camelCaseOptions to the expected camel case option for ceph.conf
       translatedGlobalConfig = mapAttrs' (name: value: nameValuePair (translateOption name) value) cfg.global;
@@ -332,30 +336,34 @@ in
       in
         generators.toINI {} totalConfig;
 
-    users.users = singleton {
+    users.extraUsers = singleton {
       name = "ceph";
       uid = config.ids.uids.ceph;
       description = "Ceph daemon user";
+      group = "ceph";
+      extraGroups = [ "disk" ];
     };
-
-    users.groups = singleton {
+    users.extraGroups = singleton {
       name = "ceph";
       gid = config.ids.gids.ceph;
     };
 
     systemd.services = let
-      services = [] 
-        ++ optional cfg.mon.enable (generateDaemonList "mon" cfg.mon.daemons { RestartSec = "10"; }) 
+      services = []
+        ++ optional cfg.mon.enable (generateDaemonList "mon" cfg.mon.daemons { RestartSec = "10"; })
         ++ optional cfg.mds.enable (generateDaemonList "mds" cfg.mds.daemons { StartLimitBurst = "3"; })
-        ++ optional cfg.osd.enable (generateDaemonList "osd" cfg.osd.daemons { StartLimitBurst = "30"; RestartSec = "20s"; })
+        ++ optional cfg.osd.enable (generateDaemonList "osd" cfg.osd.daemons { StartLimitBurst = "30"; RestartSec = "20s"; PrivateDevices = "no"; })
         ++ optional cfg.rgw.enable (generateDaemonList "rgw" cfg.rgw.daemons { })
         ++ optional cfg.mgr.enable (generateDaemonList "mgr" cfg.mgr.daemons { StartLimitBurst = "3"; });
-      in 
+      in
         mkMerge services;
 
     systemd.targets = let
       targets = [
-        { "ceph" = { description = "Ceph target allowing to start/stop all ceph service instances at once"; }; }
+        { "ceph" = {
+                     description = "Ceph target allowing to start/stop all ceph service instances at once";
+                     wantedBy = [ "multi-user.target" ];
+                   }; }
       ] ++ optional cfg.mon.enable (generateTargetFile "mon")
         ++ optional cfg.mds.enable (generateTargetFile "mds")
         ++ optional cfg.osd.enable (generateTargetFile "osd")

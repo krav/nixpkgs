@@ -1,15 +1,17 @@
 { stdenv, ensureNewerSourcesHook, cmake, pkgconfig
 , which, git
 , boost, python2Packages
-, libxml2, zlib
-, openldap, lttng-ust
+, libxml2, zlib, lz4
+, openldap, lttngUst
 , babeltrace, gperf
 , cunit, snappy
 , rocksdb, makeWrapper
+, leveldb, oathToolkit
+#, nodejs, phantomjs2 #dashboard
 
 # Optional Dependencies
 , yasm ? null, fcgi ? null, expat ? null
-, curl ? null, fuse ? null
+, curl ? null, fuse ? null, libibverbs, librdmacm ? null
 , libedit ? null, libatomic_ops ? null, kinetic-cpp-client ? null
 , libs3 ? null
 
@@ -22,28 +24,28 @@
 
 # Linux Only Dependencies
 , linuxHeaders, libuuid, udev, keyutils, libaio ? null, libxfs ? null
-, zfs ? null
+, zfs ? null, utillinux
 
 # Version specific arguments
-, version, src ? [], buildInputs ? []
+, version, src, patches ? [], buildInputs ? []
 , ...
 }:
 
 # We must have one crypto library
 assert cryptopp != null || (nss != null && nspr != null);
 
-with stdenv;
-with stdenv.lib;
-let
+with stdenv; with stdenv.lib;
 
-  shouldUsePkg = pkg_: let pkg = (builtins.tryEval pkg_).value;
-    in if pkg.meta.available or false then pkg else null;
+let
+  shouldUsePkg = pkg: if pkg != null && pkg.meta.available then pkg else null;
 
   optYasm = shouldUsePkg yasm;
   optFcgi = shouldUsePkg fcgi;
   optExpat = shouldUsePkg expat;
   optCurl = shouldUsePkg curl;
   optFuse = shouldUsePkg fuse;
+  optLibibverbs = shouldUsePkg libibverbs;
+  optLibrdmacm = shouldUsePkg librdmacm;
   optLibedit = shouldUsePkg libedit;
   optLibatomic_ops = shouldUsePkg libatomic_ops;
   optKinetic-cpp-client = shouldUsePkg kinetic-cpp-client;
@@ -60,12 +62,12 @@ let
   optLibxfs = shouldUsePkg libxfs;
   optZfs = shouldUsePkg zfs;
 
+  hasMon = true;
+  hasMds = true;
+  hasOsd = true;
   hasRadosgw = optFcgi != null && optExpat != null && optCurl != null && optLibedit != null;
 
-
-  # TODO: Reenable when kinetic support is fixed
-  #hasKinetic = versionAtLeast version "9.0.0" && optKinetic-cpp-client != null;
-  hasKinetic = false;
+  hasKinetic = versionAtLeast version "9.0.0" && optKinetic-cpp-client != null;
 
   # Malloc implementation (can be jemalloc, tcmalloc or null)
   malloc = if optJemalloc != null then optJemalloc else optGperftools;
@@ -74,7 +76,7 @@ let
   cryptoStr = if optNss != null && optNspr != null then "nss" else
     if optCryptopp != null then "cryptopp" else "none";
   cryptoLibsMap = {
-    nss = [ optNss optNspr ];
+    nss = [ nss nspr ];
     cryptopp = [ optCryptopp ];
     none = [ ];
   };
@@ -85,26 +87,32 @@ let
     ps.argparse
     ps.cython
     ps.setuptools
-    ps.pip
+    ps.virtualenv
     # Libraries needed by the python tools
     ps.Mako
+    ps.cherrypy
     ps.pecan
     ps.prettytable
     ps.webob
-    ps.cherrypy
+    ps.bcrypt
   ]);
 
+#  node-env = (import ./dashboard-node-env {}).package;
 in
+
 stdenv.mkDerivation {
   name="ceph-${version}";
 
   inherit src;
 
   patches = [
- #   ./ceph-patch-cmake-path.patch
-    ./0001-kv-RocksDBStore-API-break-additional.patch
-  ] ++ optionals stdenv.isLinux [
-    ./0002-fix-absolute-include-path.patch
+    ./0000-fix-SPDK-build-env.patch
+    #./0000-dashboard-rm-deps.patch
+
+    # TODO: remove when https://github.com/ceph/ceph/pull/21289 is merged
+    ./0000-ceph-volume-allow-loop.patch
+    # TODO: remove when https://github.com/ceph/ceph/pull/20938 is merged
+    ./0000-dont-hardcode-bin-paths.patch
   ];
 
   nativeBuildInputs = [
@@ -115,54 +123,52 @@ stdenv.mkDerivation {
 
   buildInputs = buildInputs ++ cryptoLibsMap.${cryptoStr} ++ [
     boost ceph-python-env libxml2 optYasm optLibatomic_ops optLibs3
-    malloc zlib openldap lttng-ust babeltrace gperf cunit
-    snappy rocksdb
+    malloc zlib openldap lttngUst babeltrace gperf cunit
+    snappy rocksdb lz4 oathToolkit leveldb optLibibverbs optLibrdmacm
+#    node-env nodejs phantomjs2 #dashboard
   ] ++ optionals stdenv.isLinux [
-    linuxHeaders libuuid udev keyutils optLibaio optLibxfs optZfs
+    linuxHeaders utillinux libuuid udev keyutils optLibaio optLibxfs optZfs
   ] ++ optionals hasRadosgw [
     optFcgi optExpat optCurl optFuse optLibedit
   ] ++ optionals hasKinetic [
     optKinetic-cpp-client
   ];
 
-
   preConfigure =''
-    # rip off submodule that interfer with system libs
-	rm -rf src/boost
-	rm -rf src/rocksdb
-
-	# require LD_LIBRARY_PATH for cython to find internal dep
-	export LD_LIBRARY_PATH="$PWD/build/lib:$LD_LIBRARY_PATH"
-
-	# requires setuptools due to embedded in-cmake setup.py usage
-	export PYTHONPATH="${python2Packages.setuptools}/lib/python2.7/site-packages/:$PYTHONPATH"
+    # require LD_LIBRARY_PATH for pybind/rgw to find internal dep
+    export LD_LIBRARY_PATH="$PWD/build/lib:$LD_LIBRARY_PATH"
+#    export HOME=$(mktemp -d) # dashboard
+    patchShebangs src/spdk
   '';
 
   cmakeFlags = [
-    "-DENABLE_GIT_VERSION=OFF"
-    "-DWITH_SYSTEM_BOOST=ON"
     "-DWITH_SYSTEM_ROCKSDB=ON"
-    "-DWITH_LEVELDB=OFF"
+    "-DROCKSDB_INCLUDE_DIR=${rocksdb}/include/rocksdb"
+    "-DWITH_SYSTEM_BOOST=OFF" # TODO can't find boost_python on mimic, but works on master branch
+    "-DBOOST_LIBRARYDIR=${boost}/lib"
+    "-DWITH_SYSTEMD=OFF"
+    "-DWITH_TESTS=OFF"
 
-    # enforce shared lib
-    "-DBUILD_SHARED_LIBS=ON"
-
-    # disable cephfs, cmake build broken for now
-    "-DWITH_CEPHFS=OFF"
-    "-DWITH_LIBCEPHFS=OFF"
+    "-DWITH_SYSTEM_NPM=ON"
+    "-DWITH_MGR_DASHBOARD_FRONTEND=OFF"
   ];
+
+#  buildPhase = ''
+#    export PATH=$PATH:${node-env}/lib/node_modules/ceph-dashboard/node_modules/.bin
+#    make -f CMakeFiles/Makefile2 src/pybind/mgr/all
+#  '';
 
   postFixup = ''
     wrapPythonPrograms
-    wrapProgram $out/bin/ceph-mgr --set PYTHONPATH $out/${python2Packages.python.sitePackages}
+    wrapProgram $out/bin/ceph-mgr --prefix PYTHONPATH ":" "$out/lib/ceph/mgr:$out/lib/python2.7/site-packages/"
   '';
 
   enableParallelBuilding = true;
 
-  outputs = [ "dev" "lib" "out" "doc" ];
+  outputs = [ "out" "dev" "doc" ];
 
   meta = {
-    homepage = https://ceph.com/;
+    homepage = http://ceph.com/;
     description = "Distributed storage system";
     license = licenses.lgpl21;
     maintainers = with maintainers; [ adev ak wkennington ];

@@ -1,0 +1,11 @@
+--- ceph-04b7d3d/src/pybind/mgr/dashboard/CMakeLists.txt	1980-01-02 00:00:00.000000000 +0100
++++ ceph-patched/src/pybind/mgr/dashboard/CMakeLists.txt	2018-08-30 15:46:30.067398359 +0200
+@@ -59,7 +59,7 @@
+ 
+ add_npm_command(
+   OUTPUT "${CMAKE_SOURCE_DIR}/src/pybind/mgr/dashboard/frontend/node_modules"
+-  COMMAND npm i -g npm@6.2.0 --unsafe-perm && npm ci
++  COMMAND true
+   DEPENDS frontend/package.json
+   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/pybind/mgr/dashboard/frontend
+   COMMENT "dashboard frontend dependencies are being installed"
